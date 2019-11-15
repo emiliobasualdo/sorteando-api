@@ -1,0 +1,19 @@
+{
+  "name": "sorteando-api",
+  "version": "1.0.0",
+  "description": "This is the first api for sorteando",
+  "main": "index.js",
+  "author": "Pilo Basualdo",
+  "license": "MIT",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon --exec yarn start"
+  },
+  "dependencies": {
+    "@hapi/hapi": "^18.4.0",
+    "@hapi/joi": "^16.1.7",
+    "hapi-auth-jwt2": "^8.8.0",
+    "hapi-cors": "^1.0.3",
+    "jsonwebtoken": "^8.5.1"
+  }
+}
