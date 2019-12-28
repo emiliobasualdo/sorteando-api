@@ -12,6 +12,7 @@
   "dependencies": {
     "@hapi/hapi": "^18.4.0",
     "@hapi/joi": "^16.1.7",
+    "boom": "^7.3.0",
     "hapi-auth-jwt2": "^8.8.0",
     "hapi-cors": "^1.0.3",
     "jsonwebtoken": "^8.5.1"

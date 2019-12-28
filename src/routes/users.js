@@ -3,6 +3,10 @@ const AuthService = require('./../services/auth');
 const { auth } = require('./../constants/auth');
 const { emailSchema, passwdSchema, fbTokenSchema, sourceSchema } = require('./_schemas');
 
+// LEER (para simplificar mi cabeza por ahora)
+
+// FB o JWT le pegan directamente a login
+// Email le pega a signup
 const basicAuthPayloadSchema = Joi.object({
     source: sourceSchema.required(),
     email: Joi
@@ -18,7 +22,7 @@ const basicAuthPayloadSchema = Joi.object({
 
 const signup = {
     method: 'post',
-    path: '/auth/signup',
+    path: '/users',
     options: {
         auth: false,
         validate: {
@@ -27,15 +31,17 @@ const signup = {
     },
     handler: (req, h) => {
         const { source, email, password, fbToken } = req.payload;
-        const { msg } = AuthService.signup(source, email, password, fbToken);
-
-        return msg
+        const { error, user, jwt } = AuthService.signup(source, email, password, fbToken);
+        return {
+            ...user,
+            jwt
+        }
     }
 };
 
 const signin = {
     method: 'post',
-    path: '/auth/signin',
+    path: '/users/me',
     options: {
         auth: false,
         validate: {
@@ -46,7 +52,7 @@ const signin = {
         const { source, email, password, fbToken } = req.payload;
         const { error, user, jwt } = AuthService.signin(source, email, password, fbToken);
         return {
-            user,
+            ...user,
             jwt
         }
     }

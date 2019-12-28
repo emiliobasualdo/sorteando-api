@@ -1,7 +1,7 @@
 const Joi = require('@hapi/joi');
 const DrawService = require('./../services/draw');
-const AuthService = require('./../services/auth');
 const { drawIdSchema } = require('./_schemas');
+const Boom = require('boom');
 
 const get = {
     method: 'GET',
@@ -33,7 +33,8 @@ const getWinner = {
     },
     handler: (req, h) => {
         const { id } = req.params;
-        return DrawService.getDraw(id).winner
+        const draw = DrawService.getDraw(id);
+        return draw.winner ? draw.winner : Boom.badRequest("Draw has not yet finished");
     }
 };
 
