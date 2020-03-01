@@ -4,6 +4,8 @@ const routesUp = require('./src/routes');
 const settings = require('./settings');
 const AuthService = require('./src/services/auth');
 const hapiJwt = require('hapi-auth-jwt2');
+const mongoose = require('mongoose');
+mongoose.set('debug', true);
 
 // bring your own validation function
 const validateUser = async function (decoded, request, h) {
@@ -16,11 +18,16 @@ const validateUser = async function (decoded, request, h) {
 };
 
 const init = async () => {
+    // conectamos con mongo
+    await mongoose.connect(settings.mongo.url, {useNewUrlParser: true, useUnifiedTopology: true });
+    const db = mongoose.connection;
+    db.on('error', () => {console.error(`Unable to connect to Mongo server: ${settings.mongo.url}`);process.exit(1);});
+    db.once('open', _ => {console.log('Database connected:', settings.mongo.url)});
+    // levantamos los servicios
     const server = Hapi.server({
         port: settings.server.port,
         host: settings.server.host
     });
-
 
     await server.register(hapiJwt);
     server.auth.strategy('jwt', 'jwt',

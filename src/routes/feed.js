@@ -6,14 +6,8 @@ const getFeed = {
     options: {
         auth: false,
     },
-    handler: (req, h) => {
-        const page = parseInt(req.query.page);
-        const draws = FeedService.getFeed(page);
-
-        return {
-            count: draws ? draws.length : 0,
-            draws
-        }
+    handler: async (req, h) => {
+        return await FeedService.getFeed();
     }
 };
 
@@ -23,8 +17,8 @@ const getBanners = {
     options: {
         auth: false
     },
-    handler: (req, h) => {
-        return FeedService.getBanners();
+    handler: async (req, h) => {
+        return await FeedService.getBanners();
     }
 };
 

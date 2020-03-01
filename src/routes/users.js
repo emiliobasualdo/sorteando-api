@@ -1,64 +1,125 @@
 const Joi = require('@hapi/joi');
 const AuthService = require('./../services/auth');
-const { auth } = require('./../constants/auth');
-const { emailSchema, passwdSchema, fbTokenSchema, sourceSchema } = require('./_schemas');
+const UserService = require('./../services/user');
+const {InvalidVerificationCode, FinishedDraw, NoSuchDraw, NoSuchUser, InvalidPhoneNumber} = require("../constants/exceptions");
+const {drawIdSchema} = require('./_schemas');
 
-// LEER (para simplificar mi cabeza por ahora)
-
-// FB o JWT le pegan directamente a login
-// Email le pega a signup
-const basicAuthPayloadSchema = Joi.object({
-    source: sourceSchema.required(),
-    email: Joi
-        .when('source', { is: auth.method.fb, then: Joi.invalid() })
-        .when('source', { is: auth.method.email, then: emailSchema.required() }),
-    password: Joi
-        .when('source', { is: auth.method.fb, then: Joi.invalid() })
-        .when('source', { is: auth.method.email, then: passwdSchema.required() }),
-    fbToken: Joi
-        .when('source', { is: auth.method.fb, then: fbTokenSchema.required() })
-        .when('source', { is: auth.method.email, then: Joi.invalid() }),
-});
-
-const signup = {
-    method: 'post',
-    path: '/users',
-    options: {
-        auth: false,
-        validate: {
-            payload: basicAuthPayloadSchema
-        }
-    },
-    handler: (req, h) => {
-        const { source, email, password, fbToken } = req.payload;
-        const { error, user, jwt } = AuthService.signup(source, email, password, fbToken);
-        return {
-            ...user,
-            jwt
-        }
-    }
+const get = {
+  method: 'GET',
+  path: '/users/me',
+  options: {
+    auth: 'jwt',
+  },
+  handler: (req, h) => {
+    const {credentials} = req.auth;
+    console.log("credentials:", credentials);
+    const {error, user} = AuthService.getUserById(credentials.id);
+    if (error) h.response(data).code(201);
+    else return user;
+  }
 };
 
-const signin = {
-    method: 'post',
-    path: '/users/me',
-    options: {
-        auth: false,
-        validate: {
-            payload: basicAuthPayloadSchema
-        }
-    },
-    handler: (req, h) => {
-        const { source, email, password, fbToken } = req.payload;
-        const { error, user, jwt } = AuthService.signin(source, email, password, fbToken);
-        return {
-            ...user,
-            jwt
-        }
+const sendSms = {
+  method: 'POST',
+  path: '/users/me',
+  options: {
+    auth: false,
+  },
+  handler: async (req, h) => {
+    const {phone_number} = req.payload;
+    try {
+      await AuthService.sendSms(phone_number);
+      return h.response("Sms sent").code(200);
+    } catch (e) {
+      if (e instanceof InvalidPhoneNumber)
+        return h.response(e.resp).code(400);
+      throw e
     }
+  }
 };
+
+const verifyCode = {
+  method: 'POST',
+  path: '/users/me/verify',
+  options: {
+    auth: false,
+  },
+  handler: async (req, h) => {
+    const {code, phone_number} = req.payload;
+    try {
+      const data = await AuthService.verifyCode(phone_number, code);
+      console.log(data);
+      return h.response(data).code(201);
+    } catch (e) {
+      if (e instanceof InvalidVerificationCode)
+        return h.response(e.resp).code(400);
+      else
+        throw e;
+    }
+  }
+};
+
+const participate = {
+  method: 'POST',
+  path: '/users/me/draws',
+  options: {
+    auth: 'jwt',
+    validate: {
+      payload: Joi.object({
+        drawId: drawIdSchema.required()
+      })
+    }
+  },
+  handler: async (req, h) => {
+    const {drawId} = req.payload;
+    const {credentials} = req.auth;
+    try {
+      const user = await UserService.participate(credentials.id, drawId);
+      return h.response(user).code(200);
+    } catch (e) {
+      if (e instanceof NoSuchUser)
+        return h.response(e.resp).code(404);
+      if (e instanceof NoSuchDraw)
+        return h.response(e.resp).code(404);
+      if (e instanceof FinishedDraw)
+        return h.response(e.resp).code(409);
+      throw e;
+    }
+  }
+};
+
+const stopParticipating = {
+  method: 'DELETE',
+  path: '/users/me/draws',
+  options: {
+    auth: 'jwt',
+    validate: {
+      payload: Joi.object({
+        drawId: drawIdSchema.required()
+      })
+    }
+  },
+  handler: async (req, h) => {
+    const {drawId} = req.payload;
+    const {credentials} = req.auth;
+    try {
+      const user = await UserService.stopParticipating(credentials.id, drawId);
+      return h.response(user).code(200);
+    } catch (e) {
+      if (e instanceof NoSuchDraw)
+        return h.response(e.resp).code(404);
+      if (e instanceof FinishedDraw)
+        return h.response(e.resp).code(409);
+      throw e;
+    }
+  }
+};
+
 
 module.exports = [
-    signup,
-    signin
+  sendSms,
+  verifyCode,
+  get,
+  participate,
+  stopParticipating
 ];

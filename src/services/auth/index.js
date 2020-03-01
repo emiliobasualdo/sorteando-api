@@ -1,46 +1,54 @@
 const JwtServices = require('./jwt');
-const { auth } = require('./../../constants/auth');
+const SmsServices = require('./sms');
+const SmsCodeServices = require('./smsCode');
+const {InvalidVerificationCode, PhoneNumberInUse, InvalidPhoneNumber} = require('./../../constants/exceptions');
+const {newUser, findByPhoneNumber, findById, userExists: _userExists} = require("../../models/user");
 
-const exampleUser = (source, email, password, fbToken) => {
-    return {
-        userId: 11,
-        loginSource: source ? source : auth.method.jwt,
-        userProfile: {
-            email: email ? email : "test@jwt-o-facebook.com",
-            profileImage: "https://content-static.upwork.com/uploads/2014/10/02123010/profilephoto_goodcrop.jpg",
-            name: "Pilo",
-            surname: "Basualdo",
-            cellphone: "+5491133071114",
-            dni: "40399433"
-        },
-        participatingDraws: [10000, 1200]
-    };
+const isValidPhone = (number) => {
+  return number.length === 10;
 };
 
-const signin = (source, email, password, fbToken) => {
-    const user = exampleUser(source, email, password, fbToken);
-    const jwt = JwtServices.sign({ id:user.userId });
-    return { user, jwt }
+const sendSms = async (phoneNumber) => {
+  phoneNumber = phoneNumber.replace("+", "00").replace(/\D/g, '');
+  if(!isValidPhone(phoneNumber)) throw new InvalidPhoneNumber;
+  const code = await SmsCodeServices.newCode(phoneNumber);
+  const text = `Tu código de activación Sorteando es ${code}`;
+  return SmsServices.send(phoneNumber, text);
 };
 
-const signup = ( source, email, password, fbToken ) => {
-    const { auth } = require('./../../constants/auth');
-    const user = exampleUser(source, email, password, fbToken);
-    const jwt = JwtServices.sign({ id:user.userId });
-    return { user, jwt }
+const verifyCode = async (phoneNumber, code) => {
+  phoneNumber = phoneNumber.replace("+", "00").replace(/\D/g, '');
+  const isValid = await SmsCodeServices.verify(phoneNumber, code);
+  if (! isValid) throw new InvalidVerificationCode;
+  const user = await newUser(phoneNumber)
+    .catch(e => {
+      if (e instanceof PhoneNumberInUse) {
+        return findByPhoneNumber(phoneNumber)
+      } else throw e
+    });
+  const jwt = JwtServices.sign({id: user._id});
+  return {user, jwt}
 };
 
 const jwtToUser = (jwt) => {
-    return exampleUser();
+  return {};
 };
 
+const getUserById = (id) => {
+  return {user: findById(id)}
+};
+
+const userExists = (id) => _userExists(id);
+
 const isValidJwt = (decodedJwt) => {
-    return true;
+  return true;
 };
 
 module.exports = {
-    signup,
-    signin,
-    jwtToUser,
-    isValidJwt
+  sendSms,
+  verifyCode,
+  jwtToUser,
+  getUserById,
+  isValidJwt,
+  userExists
 };
