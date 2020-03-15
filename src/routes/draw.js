@@ -45,7 +45,7 @@ const getWinner = {
         const { id } = req.params;
         try {
             const draw = await DrawService.findById(id);
-            if(!draw.winner) throw new DrawStillRunning;
+            //if(draw.end_date >= Date.now()) throw new DrawStillRunning;
             return h.response(draw.winner).code(200)
         } catch (e) {
             if (e instanceof NoSuchDraw)
@@ -56,7 +56,6 @@ const getWinner = {
         }
     }
 };
-
 
 
 module.exports = [

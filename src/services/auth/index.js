@@ -5,7 +5,7 @@ const {InvalidVerificationCode, PhoneNumberInUse, InvalidPhoneNumber} = require(
 const {newUser, findByPhoneNumber, findById, userExists: _userExists} = require("../../models/user");
 
 const isValidPhone = (number) => {
-  return number.length === 10;
+  return number.length === 15;
 };
 
 const sendSms = async (phoneNumber) => {
@@ -27,16 +27,14 @@ const verifyCode = async (phoneNumber, code) => {
       } else throw e
     });
   const jwt = JwtServices.sign({id: user._id});
-  return {user, jwt}
+  return {user: user.asObject(), jwt}
 };
 
 const jwtToUser = (jwt) => {
   return {};
 };
 
-const getUserById = (id) => {
-  return {user: findById(id)}
-};
+const getUserById = async (id) => (await findById(id)).asObject();
 
 const userExists = (id) => _userExists(id);
 

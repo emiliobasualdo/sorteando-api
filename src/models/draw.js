@@ -10,7 +10,7 @@ const userInscription = new mongoose.Schema({
 const userInscriptionHistory = new mongoose.Schema({
   _id: false,
   inscription: {required: true, type: userInscription},
-  date : {required: true, type:Date, default: Date.now}
+  date: {required: true, type: Date, default: Date.now}
 });
 const drawSchema = new mongoose.Schema({
   title: {type: String, required: true},
@@ -47,7 +47,7 @@ const removeUser = (draw, user) => {
 const modelFunctions = (draw) => {
   draw.addUser = (user) => addUser(draw, user);
   draw.removeUser = (user) => removeUser(draw, user);
-  draw.asObject = () => draw.toObject({flattenMaps:true});
+  draw.asObject = () => draw.toObject({flattenMaps: true});
   return draw;
 };
 
@@ -58,6 +58,8 @@ const newDraw = (draw) => {
 };
 
 const findById = (id) => _Draw.findById(id)
+  .populate({path: 'brand', select: 'name'})
+  .populate({path: 'winner', select: 'phone_number'})
   .then(d => {
     if (!d) throw new NoSuchDraw;
     return modelFunctions(d);
@@ -71,23 +73,50 @@ const findByTitle = (title) => _Draw.findOne({title});
 
 const drawExists = (_id) => _Draw.exists({_id});
 
-const getAll = async () => {
+const getDraws = async (skip, limit) => {
   const query = _Draw.find(
-      { end_date: {"$gte": Date.now()}},
-      {
-        title: 1,
-        description: 1,
-        brand: 1,
-        end_date: 1,
-        images: 1
-      }
-    ).populate({ path: 'brand', select: 'name' });
+    {end_date: {"$gt": Date.now()}},
+    {
+      title: 1,
+      description: 1,
+      brand: 1,
+      end_date: 1,
+      images: 1
+    }
+  );
+  query
+    .populate({path: 'brand', select: 'name'})
+    .skip(skip)
+    .limit(limit)
+    .sort({'end_date': 1});
   return await query.exec();
 };
+
+const getFinished = async (skip, limit) => {
+  const query = _Draw.find(
+    {end_date: {"$lte": Date.now()}},
+    {
+      title: 1,
+      brand: 1,
+      end_date: 1,
+      images: 1
+    }
+  );
+  query
+    .populate({path: 'brand', select: 'name'})
+    .populate({path: 'winner', select: 'phone_number'})
+    .skip(skip)
+    .limit(limit)
+    .sort({'end_date': -1});
+  return await query.exec();
+};
+
 registerBrand();
+
 module.exports = {
   newDraw,
   findById,
   drawExists,
-  getAll
+  getDraws,
+  getFinished
 };

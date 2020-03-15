@@ -1,21 +1,34 @@
 const Joi = require('@hapi/joi');
 const AuthService = require('./../services/auth');
 const UserService = require('./../services/user');
-const {InvalidVerificationCode, FinishedDraw, NoSuchDraw, NoSuchUser, InvalidPhoneNumber} = require("../constants/exceptions");
+const {InvalidVerificationCode, FinishedDraw, NoSuchDraw, NoSuchUser, InvalidPhoneNumber, MaximumParticipations} = require("../constants/exceptions");
 const {drawIdSchema} = require('./_schemas');
 
+const userDto = (user) => {
+  const dto = user;
+  dto.current_draws = Object.keys(user.current_draws);
+  delete dto.participate;
+  delete dto.stopParticipating;
+  delete dto.updated_at;
+  delete dto.__v;
+  return dto;
+};
 const get = {
   method: 'GET',
   path: '/users/me',
   options: {
     auth: 'jwt',
   },
-  handler: (req, h) => {
+  handler: async (req, h) => {
     const {credentials} = req.auth;
     console.log("credentials:", credentials);
-    const {error, user} = AuthService.getUserById(credentials.id);
-    if (error) h.response(data).code(201);
-    else return user;
+    try {
+      return userDto(await AuthService.getUserById(credentials.id));
+    } catch (e) {
+      if (e instanceof NoSuchUser)
+        return h.response(e.resp).code(404);
+      throw e;
+    }
   }
 };
 
@@ -48,6 +61,7 @@ const verifyCode = {
     const {code, phone_number} = req.payload;
     try {
       const data = await AuthService.verifyCode(phone_number, code);
+      data.user = userDto(data.user);
       console.log(data);
       return h.response(data).code(201);
     } catch (e) {
@@ -75,13 +89,15 @@ const participate = {
     const {credentials} = req.auth;
     try {
       const user = await UserService.participate(credentials.id, drawId);
-      return h.response(user).code(200);
+      return h.response(userDto(user)).code(200);
     } catch (e) {
       if (e instanceof NoSuchUser)
         return h.response(e.resp).code(404);
       if (e instanceof NoSuchDraw)
         return h.response(e.resp).code(404);
       if (e instanceof FinishedDraw)
+        return h.response(e.resp).code(409);
+      if (e instanceof MaximumParticipations)
         return h.response(e.resp).code(409);
       throw e;
     }
@@ -90,21 +106,21 @@ const participate = {
 
 const stopParticipating = {
   method: 'DELETE',
-  path: '/users/me/draws',
+  path: '/users/me/draws/{drawId}',
   options: {
     auth: 'jwt',
     validate: {
-      payload: Joi.object({
+      params: Joi.object({
         drawId: drawIdSchema.required()
       })
     }
   },
   handler: async (req, h) => {
-    const {drawId} = req.payload;
+    const {drawId} = req.params;
     const {credentials} = req.auth;
     try {
       const user = await UserService.stopParticipating(credentials.id, drawId);
-      return h.response(user).code(200);
+      return h.response(userDto(user)).code(200);
     } catch (e) {
       if (e instanceof NoSuchDraw)
         return h.response(e.resp).code(404);

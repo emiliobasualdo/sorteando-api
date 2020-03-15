@@ -46,6 +46,12 @@ class InvalidPhoneNumber extends Error {
   resp = {code:this.code, msg: this.msg};
 }
 
+class MaximumParticipations extends Error {
+  code = 9;
+  msg = "The user reached the limit of draws in which he can participate";
+  resp = {code:this.code, msg: this.msg};
+}
+
 module.exports = {
   InvalidVerificationCode,
   PhoneNumberInUse,
@@ -54,5 +60,6 @@ module.exports = {
   NoSuchUser,
   NoSuchDraw,
   DrawStillRunning,
-  InvalidPhoneNumber
+  InvalidPhoneNumber,
+  MaximumParticipations
 };

@@ -1,5 +1,6 @@
-const {getAll} = require("../../models/draw");
-const {newDraw} = require("../../models/draw");
+const {PAGE_SIZE} = require("../../constants");
+const {getDraws: _getDraws} = require("../../models/draw");
+const {newDraw, getFinished: _getFinished} = require("../../models/draw");
 const {findById: _findById} = require("../../models/draw");
 
 function getRandomArbitrary(min, max) {
@@ -7,12 +8,12 @@ function getRandomArbitrary(min, max) {
 }
 
 const getDate = () => {
-  return Date.now() + getRandomArbitrary(900000000, 9000000000);
+  return Date.now() + getRandomArbitrary(5 *1000, 10 *1000);
 };
 
 const sampleDraws = () => [
   {
-    winner: "5e5ae28557de0ddd0b6e6cbc",
+    winner: "5e5bd5a4aba8eb3ba18e4e69",
     title: "Matera Roja",
     description: "Este artefacto cuenta con un palo de color azul y además cabra muy cheta. \nEstamos probando la descripción al estilo lorem ipsum",
     brand: "5e5bab9096f270c94efdf3f3",
@@ -20,7 +21,7 @@ const sampleDraws = () => [
     images: ["https://http2.mlstatic.com/matera-de-cuero-vacuno-D_NQ_NP_12938-MLA20069893007_032014-F.jpg", "https://cdn.webshopapp.com/shops/263001/files/287759514/image.jpg", "https://dafitistaticar-a.akamaihd.net/p/ay-not-dead-6921-052142-1-product.jpg"]
   },
   {
-    winner: "5e5ae28557de0ddd0b6e6cbc",
+    winner: "5e5bd5a4aba8eb3ba18e4e69",
     title: "Kit de Peluquería",
     description: "Este artefacto cuenta con un palo de color azul y además cabra muy cheta.Estamos probando la descripción al estilo lorem ipsum",
     brand: "5e5bab9996f270c94efdf3f4",
@@ -28,7 +29,7 @@ const sampleDraws = () => [
     images: ["https://mlstaticquic-a.akamaihd.net/vinilo-decorativo-de-pared-barberia-peluqueria-estilista-D_NQ_NP_607185-MLU31725182692_082019-F.jpg", "https://cdn.webshopapp.com/shops/263001/files/287759514/image.jpg", "https://dafitistaticar-a.akamaihd.net/p/ay-not-dead-6921-052142-1-product.jpg"]
   },
   {
-    winner: "5e5ae28557de0ddd0b6e6cbc",
+    winner: "5e5bd5a4aba8eb3ba18e4e69",
     title: "Zapatillas Nike Rn 2017",
     description: "Este artefacto cuenta con un palo de color azul y además cabra muy cheta. Estamos probando la descripción al estilo lorem ipsum",
     brand: "5e5baba096f270c94efdf3f5",
@@ -36,7 +37,7 @@ const sampleDraws = () => [
     images: ["https://images.puma.net/images/369818/01/sv01/fnd/CHL/w/1000/h/1000/bg/255,255,255", "https://cdn.webshopapp.com/shops/263001/files/287759514/image.jpg", "https://dafitistaticar-a.akamaihd.net/p/ay-not-dead-6921-052142-1-product.jpg"]
   },
   {
-    winner: "5e5ae28557de0ddd0b6e6cbc",
+    winner: "5e5bd5a4aba8eb3ba18e4e69",
     title: "2 Noches en el Delta",
     description: "Este artefacto cuenta con un palo de color azul y además cabra muy cheta. Estamos probando la descripción al estilo lorem ipsum",
     brand: "5e5baba596f270c94efdf3f6",
@@ -44,7 +45,7 @@ const sampleDraws = () => [
     images: ["https://www.ahstatic.com/photos/3167_ho_00_p_2048x1536.jpg", "https://cdn.webshopapp.com/shops/263001/files/287759514/image.jpg", "https://dafitistaticar-a.akamaihd.net/p/ay-not-dead-6921-052142-1-product.jpg"]
   },
   {
-    winner: "5e5ae28557de0ddd0b6e6cbc",
+    winner: "5e5bd5a4aba8eb3ba18e4e69",
     title: "Camastro King",
     description: "Este artefacto cuenta con un palo de color azul y además cabra muy cheta. Estamos probando la descripción al estilo lorem ipsum",
     brand: "5e5babac96f270c94efdf3f7",
@@ -52,7 +53,7 @@ const sampleDraws = () => [
     images: ["https://http2.mlstatic.com/camastro-king-size-sillon-reposera-reclinable-mod-dubai-ext-D_NQ_NP_690117-MLA31209070041_062019-F.jpg", "https://cdn.webshopapp.com/shops/263001/files/287759514/image.jpg", "https://dafitistaticar-a.akamaihd.net/p/ay-not-dead-6921-052142-1-product.jpg"]
   },
   {
-    winner: "5e5ae28557de0ddd0b6e6cbc",
+    winner: "5e5bd5a4aba8eb3ba18e4e69",
     title: "Anteojos Aviator",
     description: "Este artefacto cuenta con un palo de color azul y además cabra muy cheta. Estamos probando la descripción al estilo lorem ipsum",
     brand: "5e5babb596f270c94efdf3f8",
@@ -68,16 +69,18 @@ const randomDraws = async () => {
 };
 //randomDraws();
 
-const getDraws = async () => {
-  let resp = await getAll();
-  resp = resp.sort((a, b) => a.end_date - b.end_date);
-  return resp;
-};
+const getDraws = (page=0) => _getDraws(page * PAGE_SIZE, PAGE_SIZE + (page * PAGE_SIZE))
+  .then(ds => ds.map(d => {d.end_date = getDate(); return d}));
 
 const findById = (id) => _findById(id);
 
+const getFinished = (page=0) => _getFinished(page * PAGE_SIZE, PAGE_SIZE + (page * PAGE_SIZE));
+
+const getWinner = (drawId) => _findById(drawId).then(x => x.winner);
 
 module.exports = {
   findById,
-  getDraws
+  getDraws,
+  getFinished,
+  getWinner
 };
