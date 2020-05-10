@@ -1,1 +1,5 @@
-# sorteando-api
+# Sorteando Api
+### Run
+```
+yarn start
+```
