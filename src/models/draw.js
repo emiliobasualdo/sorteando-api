@@ -28,6 +28,7 @@ const drawSchema = new mongoose.Schema({
     default: [],
   },
   winner: {type: Schema.Types.ObjectId, ref: 'User'},
+  pre_winner: {type: Schema.Types.ObjectId, ref: 'User'}
 }, {timestamps: {createdAt: 'created_at', updatedAt: 'updated_at'}});
 
 const _Draw = mongoose.model('Draw', drawSchema);
@@ -73,7 +74,7 @@ const findByTitle = (title) => _Draw.findOne({title});
 
 const drawExists = (_id) => _Draw.exists({_id});
 
-const getDraws = async (skip, limit) => {
+const getUnfinishedDraws = async (skip, limit) => {
   const query = _Draw.find(
     {end_date: {"$gt": Date.now()}},
     {
@@ -89,6 +90,17 @@ const getDraws = async (skip, limit) => {
     .skip(skip)
     .limit(limit)
     .sort({'end_date': 1});
+  return await query.exec();
+};
+
+const getDrawsForWinnerChoosing = async () => {
+  const query = _Draw.find(
+    {end_date: {"$gt": Date.now()}},
+    {
+      current_users: 1,
+      pre_winner: 1
+    }
+  );
   return await query.exec();
 };
 
@@ -117,6 +129,7 @@ module.exports = {
   newDraw,
   findById,
   drawExists,
-  getDraws,
-  getFinished
+  getUnfinishedDraws,
+  getFinished,
+  getDrawsForWinnerChoosing
 };

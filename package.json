@@ -16,6 +16,7 @@
     "hapi-auth-jwt2": "^8.8.0",
     "hapi-cors": "^1.0.3",
     "jsonwebtoken": "^8.5.1",
-    "mongoose": "^5.9.1"
+    "mongoose": "^5.9.1",
+    "node-cron": "^2.0.3"
   }
 }

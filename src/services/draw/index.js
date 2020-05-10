@@ -1,14 +1,12 @@
+const {rand} = require("../../utils");
 const {PAGE_SIZE} = require("../../constants");
-const {getDraws: _getDraws} = require("../../models/draw");
+const {getUnfinishedDraws} = require("../../models/draw");
 const {newDraw, getFinished: _getFinished} = require("../../models/draw");
 const {findById: _findById} = require("../../models/draw");
 
-function getRandomArbitrary(min, max) {
-  return Math.trunc(Math.random() * (max - min) + min);
-}
 
 const getDate = () => {
-  return Date.now() + getRandomArbitrary(5 *1000, 10 *1000);
+  return Date.now() + rand(5 *1000, 10 *1000);
 };
 
 const sampleDraws = () => [
@@ -69,8 +67,7 @@ const randomDraws = async () => {
 };
 //randomDraws();
 
-const getDraws = (page=0) => _getDraws(page * PAGE_SIZE, PAGE_SIZE + (page * PAGE_SIZE))
-  .then(ds => ds.map(d => {d.end_date = getDate(); return d}));
+const getDraws = (page=0) => getUnfinishedDraws(page * PAGE_SIZE, PAGE_SIZE + (page * PAGE_SIZE));
 
 const findById = (id) => _findById(id);
 

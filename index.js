@@ -4,7 +4,9 @@ const routesUp = require('./src/routes');
 const settings = require('./settings');
 const AuthService = require('./src/services/auth');
 const hapiJwt = require('hapi-auth-jwt2');
+const cron = require('node-cron');
 const mongoose = require('mongoose');
+const {selectWinners} = require("./src/services/winner");
 mongoose.set('debug', true);
 
 // bring your own validation function
@@ -50,6 +52,10 @@ const init = async () => {
 
     await server.start();
     console.log('Server running on %s', server.info.uri);
+    
+    //schedulerUp();
+    selectWinners();
+    console.log('Scheduler up');
 };
 
 // no fucking clue qué hace esto
@@ -59,3 +65,9 @@ process.on('unhandledRejection', (err) => {
 });
 
 init();
+
+const schedulerUp = () => {
+    cron.schedule('9,19,29,39,49,59 * * * *', () => {
+        selectWinners();
+    });
+};
